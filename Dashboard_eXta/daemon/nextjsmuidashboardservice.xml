@@ -1,0 +1,31 @@
+<service>
+	<id>nextjsmuidashboardservice.exe</id>
+	<name>nextjs-mui-dashboard-service</name>
+	<description>Runs the nextjs-mui-dashboard Next.js application.</description>
+	<executable>C:\Program Files\nodejs\node.exe</executable>
+	<argument>--harmony</argument>
+	<argument>D:\Next-Basic\Git\Git-iXman\Dashboard_eXta\node_modules\node-windows\lib\wrapper.js</argument>
+	<argument>--file</argument>
+	<argument>D:\Next-Basic\Git\Git-iXman\Dashboard_eXta\start-production-server.js</argument>
+	<argument>--scriptoptions=</argument>
+	<argument>--log</argument>
+	<argument>nextjs-mui-dashboard-service wrapper</argument>
+	<argument>--grow</argument>
+	<argument>0.25</argument>
+	<argument>--wait</argument>
+	<argument>1</argument>
+	<argument>--maxrestarts</argument>
+	<argument>3</argument>
+	<argument>--abortonerror</argument>
+	<argument>n</argument>
+	<argument>--stopparentfirst</argument>
+	<argument>undefined</argument>
+	<logmode>rotate</logmode>
+	<stoptimeout>30sec</stoptimeout>
+	<serviceaccount>
+		<domain>CPADCBB4603183</domain>
+		<user>LocalSystem</user>
+		<password></password>
+	</serviceaccount>
+	<workingdirectory>D:\Next-Basic\Git\Git-iXman\Dashboard_eXta</workingdirectory>
+</service>

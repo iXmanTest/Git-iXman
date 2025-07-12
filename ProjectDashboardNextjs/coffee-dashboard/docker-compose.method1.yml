@@ -1,0 +1,30 @@
+# docker-compose.yml (ไฟล์ใหม่ หรือแก้ไขจากของเดิม)
+
+services:
+  # Service ของแอปพลิเคชัน Next.js
+  app:
+    container_name: coffee_dashboard_app # ตั้งชื่อ container (แก้ปัญหา orphan)
+    build: . # บอกให้ Docker สร้าง image จาก Dockerfile ในโฟลเดอร์ปัจจุบัน
+    ports:
+      - "3000:3000" # แมพพอร์ตจากเครื่องคุณ (3000) ไปยัง container (3000)
+    environment:
+      # ตัวแปรที่ใช้เชื่อมต่อกับ DB
+      # **สำคัญมาก:** ใช้ชื่อ service 'db' เป็น host ไม่ใช่ 'localhost'
+      DATABASE_URL: "sqlserver://db:1433;database=CoffeeDB;user=sa;password=Passw0rd@cpall;trustServerCertificate=true;"
+    depends_on:
+      - db # บอกให้รอจนกว่า service 'db' จะพร้อมใช้งานก่อน
+
+  # Service ของฐานข้อมูล (ย้ายมาจากไฟล์เดิม)
+  db:
+    container_name: mssql_db
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Passw0rd@cpall" # ใส่รหัสผ่านเดียวกันกับ DATABASE_URL
+    # volumes: # (ถ้ามี)
+      # - mssql_data:/var/opt/mssql
+
+# volumes: # (ถ้ามี)
+  # mssql_data:

@@ -1,0 +1,2 @@
+2568-07-12 22:22:02 - Starting C:\Program Files\nodejs\node.exe  --harmony D:\Next-Basic\Git\Git-iXman\Dashboard_eXta\node_modules\node-windows\lib\wrapper.js --file D:\Next-Basic\Git\Git-iXman\Dashboard_eXta\start-production-server.js --scriptoptions= --log "nextjs-mui-dashboard-service wrapper" --grow 0.25 --wait 1 --maxrestarts 3 --abortonerror n --stopparentfirst undefined
+2568-07-12 22:22:02 - Started 4736

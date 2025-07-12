@@ -1,0 +1,76 @@
+# docker-compose.yml
+
+# กำหนดเวอร์ชันของ Docker Compose เพื่อความเข้ากันได้
+version: '3.8'
+
+services:
+  # -------------------------
+  #  Next.js Application
+  # -------------------------
+  next-app:
+    container_name: coffee_dashboard_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # ตั้งค่า Environment ให้ Next.js ทำงานในโหมด Production
+      - NODE_ENV=production
+      # ส่งค่า Environment Variables สำหรับเชื่อมต่อฐานข้อมูล
+      # ค่าเหล่านี้จะถูกอ่านจากไฟล์ .env ที่อยู่ในโฟลเดอร์เดียวกัน
+      - DB_HOST=db
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=${DB_SA_PASSWORD}
+      - DB_DATABASE=CoffeeDB
+    # depends_on จะรอจนกว่า healthcheck ของ db จะผ่าน (สถานะ healthy)
+    # เพื่อแก้ปัญหาแอปฯ พยายามเชื่อมต่อก่อนฐานข้อมูลจะพร้อม
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # -------------------------
+  #  MSSQL Database
+  # -------------------------
+  db:
+    container_name: mssql_db
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    restart: unless-stopped
+    environment:
+      # ยอมรับข้อตกลงการใช้งาน (EULA) ของ Microsoft SQL Server
+      ACCEPT_EULA: "Y"
+      # ตั้งรหัสผ่านของ user 'sa' โดยอ่านค่าจากไฟล์ .env
+      SA_PASSWORD: ${DB_SA_PASSWORD}
+    ports:
+      # เปิดพอร์ต 1433 ของ container ให้สามารถเข้าถึงได้จากเครื่อง Host
+      # ทำให้สามารถใช้ SSMS หรือ DBeaver เชื่อมต่อได้
+      - "1433:1433"
+    volumes:
+      # เก็บข้อมูลของฐานข้อมูลไว้บน Host machine เพื่อป้องกันข้อมูลหาย
+      - mssql_data:/var/opt/mssql
+    networks:
+      - app-network
+    # เพิ่ม Health Check เพื่อตรวจสอบว่า MSSQL Server พร้อมรับการเชื่อมต่อแล้วหรือยัง
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_SA_PASSWORD}", "-Q", "SELECT 1"]
+      interval: 15s           # ตรวจสอบทุกๆ 15 วินาที
+      timeout: 10s            # หากคำสั่งค้างเกิน 10 วินาที ถือว่าล้มเหลว
+      retries: 5              # พยายาม 5 ครั้งหากล้มเหลว
+      start_period: 60s       # ให้เวลา 60 วินาทีในการเริ่มต้นก่อนที่จะเริ่ม health check ครั้งแรก (สำคัญมาก)
+
+# -------------------------
+#  Volumes & Networks
+# -------------------------
+# ส่วนสำหรับจัดการ Volumes และ Networks แบบ Global
+volumes:
+  # สร้าง named volume ชื่อ mssql_data
+  mssql_data:
+
+networks:
+  # สร้าง bridge network ชื่อ app-network เพื่อให้ container คุยกันได้
+  app-network:
+    driver: bridge

@@ -1,0 +1,47 @@
+# docker-compose.yml
+
+services:
+  # Next.js Application
+  next-app:
+    container_name: coffee_dashboard_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # ส่งค่า Environment Variables ไปให้ Next.js Container
+      - DB_HOST=db
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=${DB_SA_PASSWORD} # อ่านจากไฟล์ .env
+      - DB_DATABASE=CoffeeDB
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  # MSSQL Database
+  db:
+    container_name: mssql_db
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${DB_SA_PASSWORD} # อ่านจากไฟล์ .env
+    ports:
+      # เปิด port 1433 ให้เชื่อมต่อจากภายนอกได้ (เช่น DBeaver)
+      - "1433:1433"
+    volumes:
+      # เก็บข้อมูลของ database ไว้ที่ host เพื่อไม่ให้ข้อมูลหาย
+      - mssql_data:/var/opt/mssql
+    networks:
+      - app-network
+
+volumes:
+  mssql_data:
+
+networks:
+  app-network:
+    driver: bridge

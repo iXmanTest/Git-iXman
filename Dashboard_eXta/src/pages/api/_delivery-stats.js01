@@ -1,0 +1,208 @@
+// pages/api/delivery-stats.js
+
+/**
+ * นี่คือ RESTful API Endpoint สำหรับดึงข้อมูลสถิติการจัดส่ง
+ * ในโปรเจกต์จริง ส่วนนี้จะเป็นที่ที่คุณใช้ library 'mssql'
+ * เพื่อเชื่อมต่อและ query ข้อมูลจาก SQL Server ของคุณ
+ */
+
+// จำลองข้อมูลที่ควรจะได้มาจากฐานข้อมูล MS SQL
+const mockDatabaseData = [
+  { id: 1, location: 'ส่งตรง ชลบุรี', smallBox: 411, largeBox: 103, outsideBox: null },
+  { id: 2, location: 'ส่งตรง บางบัวทอง', smallBox: 321, largeBox: 208, outsideBox: null },
+  { id: 3, location: 'ส่งตรง มหาชัย', smallBox: 230, largeBox: 51, outsideBox: null },
+  { id: 4, location: 'CDC CM', smallBox: 424, largeBox: null, outsideBox: 18 },
+  { id: 5, location: 'ส่งตรงเช้า', smallBox: 950, largeBox: 248, outsideBox: null },
+  { id: 6, location: 'CDC KK', smallBox: null, largeBox: 451, outsideBox: 22 },
+  { id: 7, location: 'CDC NR', smallBox: null, largeBox: 372, outsideBox: 24 },
+  { id: 8, location: 'ส่งตรงบ่าย', smallBox: 1721, largeBox: 275, outsideBox: null },
+];
+
+export default function handler(req, res) {
+  // ตรวจสอบว่าเป็น GET request
+  if (req.method === 'GET') {
+    
+    // --- ส่วนของโค้ด MS SQL จริงจะอยู่ตรงนี้ ---
+    /*
+    try {
+      // const sql = require('mssql');
+      // const config = require('../../connection/dbconfig'); // สมมติว่ามีไฟล์ config
+      
+      // await sql.connect(config);
+      // const result = await sql.query`SELECT * FROM YourDeliveryStatsTable`;
+      // const dataFromDb = result.recordset;
+
+      // ในที่นี้เราจะใช้ข้อมูลจำลองแทน
+      const dataFromDb = mockDatabaseData;
+
+      res.status(200).json(dataFromDb);
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Error connecting to the database' });
+    }
+    */
+    // --- จบส่วนของโค้ด MS SQL จริง ---
+
+    // สำหรับตัวอย่างนี้ เราจะส่งข้อมูลจำลองกลับไปเลย
+    res.status(200).json(mockDatabaseData);
+
+  } else {
+    // ถ้าไม่ใช่ GET request ให้ส่ง Method Not Allowed
+    res.setHeader('Allow', ['GET']);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+}```
+
+---
+
+### **ขั้นตอนที่ 3: สร้าง Frontend (หน้าแสดงผลด้วย MUI)**
+
+แทนที่โค้ดทั้งหมดในไฟล์ `pages/index.jsx` (หรือ `index.js`) ด้วยโค้ดด้านล่างนี้
+
+หน้านี้จะทำหน้าที่:
+*   แสดงสถานะ "Loading..." ระหว่างรอข้อมูล
+*   ดึงข้อมูลจาก API ที่เราสร้างในขั้นตอนที่ 2 โดยใช้ `fetch`
+*   คำนวณยอดรวม (Grand Total) จากข้อมูลที่ได้รับ
+*   แสดงผลข้อมูลทั้งหมดในตารางที่ออกแบบด้วย MUI ให้คล้ายกับรูปภาพตัวอย่าง
+
+#### 📁 `pages/index.jsx`
+
+```javascript
+import { useState, useEffect } from 'react';
+import {
+  Container,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Box,
+  CircularProgress,
+  Alert
+} from '@mui/material';
+
+// ฟังก์ชันสำหรับจัดรูปแบบตัวเลข (เช่น 1000 -> 1,000)
+const formatNumber = (num) => {
+  if (num === null || num === undefined) return '';
+  return new Intl.NumberFormat('en-US').format(num);
+};
+
+export default function DeliveryStatsPage() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // ฟังก์ชันสำหรับดึงข้อมูลจาก API
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // ใช้ fetch API ของเบราว์เซอร์ (ไม่ต้องใช้ axios)
+        const response = await fetch('/api/delivery-stats');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        setData(result);
+      } catch (e) {
+        console.error("Failed to fetch data:", e);
+        setError("ไม่สามารถดึงข้อมูลได้ กรุณาลองใหม่อีกครั้ง");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []); // [] หมายถึงให้ useEffect ทำงานแค่ครั้งเดียวตอน component ถูกสร้าง
+
+  // คำนวณยอดรวมจากข้อมูลที่ดึงมา
+  const grandTotal = data.reduce(
+    (acc, row) => {
+      acc.smallBox += row.smallBox || 0;
+      acc.largeBox += row.largeBox || 0;
+      acc.outsideBox += row.outsideBox || 0;
+      return acc;
+    },
+    { smallBox: 0, largeBox: 0, outsideBox: 0 }
+  );
+  grandTotal.total = grandTotal.smallBox + grandTotal.largeBox + grandTotal.outsideBox;
+
+  // ส่วนหัวของตาราง
+  const tableHeaders = ['รูปแบบการส่ง', 'ลังเล็ก', 'ลังใหญ่', 'สินค้านอกลัง', 'Grand Total'];
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>กำลังโหลดข้อมูล...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    );
+  }
+
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        รายงานสถิติการจัดส่ง
+      </Typography>
+      <TableContainer component={Paper}>
+        <Table aria-label="delivery statistics table">
+          <TableHead>
+            <TableRow>
+              {tableHeaders.map((header) => (
+                <TableCell
+                  key={header}
+                  align={header !== 'รูปแบบการส่ง' ? 'right' : 'left'}
+                  sx={{
+                    backgroundColor: '#1976d2', // สีน้ำเงินของ MUI
+                    color: 'white',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {header}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {data.map((row) => {
+              const rowTotal = (row.smallBox || 0) + (row.largeBox || 0) + (row.outsideBox || 0);
+              return (
+                <TableRow key={row.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell component="th" scope="row">
+                    {row.location}
+                  </TableCell>
+                  <TableCell align="right">{formatNumber(row.smallBox)}</TableCell>
+                  <TableCell align="right">{formatNumber(row.largeBox)}</TableCell>
+                  <TableCell align="right">{formatNumber(row.outsideBox)}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'medium' }}>{formatNumber(rowTotal)}</TableCell>
+                </TableRow>
+              );
+            })}
+            {/* แถว Grand Total */}
+            <TableRow sx={{ backgroundColor: '#f5f5f5', '& > *': { fontWeight: 'bold !important' } }}>
+              <TableCell>Grand Total</TableCell>
+              <TableCell align="right">{formatNumber(grandTotal.smallBox)}</TableCell>
+              <TableCell align="right">{formatNumber(grandTotal.largeBox)}</TableCell>
+              <TableCell align="right">{formatNumber(grandTotal.outsideBox)}</TableCell>
+              <TableCell align="right">{formatNumber(grandTotal.total)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Container>
+  );
+}

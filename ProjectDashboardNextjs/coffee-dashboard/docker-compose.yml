@@ -1,0 +1,59 @@
+# docker-compose.yml (ฉบับแก้ไขและสมบูรณ์)
+
+version: '3.8' # แนะนำให้ระบุเวอร์ชัน
+
+# ประกาศ Services ทั้งหมดที่นี่
+services:
+
+  # --- Service ที่ 1: ฐานข้อมูล MSSQL ---
+  db:
+    container_name: mssql_db
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${DB_SA_PASSWORD} # อ่านรหัสผ่านจากไฟล์ .env
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_SA_PASSWORD}", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --- Service ที่ 2: แอปพลิเคชัน Next.js ---
+  next-app:
+    container_name: coffee_dashboard_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped # หรือ on-failure ก็ได้ แต่ unless-stopped ครอบคลุมกว่า
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 1433
+      DB_USER: sa
+      DB_PASSWORD: ${DB_SA_PASSWORD} # อ่านรหัสผ่านจากไฟล์ .env
+      DB_DATABASE: CoffeeDB
+    depends_on:
+      db:
+        condition: service_healthy # รอให้ db พร้อมใช้งานก่อน
+    networks:
+      - app-network
+
+# ประกาศ Volumes ทั้งหมดที่นี่ (แยกส่วนออกมา)
+volumes:
+  mssql_data:
+    driver: local
+
+# ประกาศ Networks ทั้งหมดที่นี่ (แยกส่วนออกมา)
+networks:
+  app-network:
+    driver: bridge

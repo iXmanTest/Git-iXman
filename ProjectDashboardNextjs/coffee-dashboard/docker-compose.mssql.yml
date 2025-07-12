@@ -1,0 +1,29 @@
+# docker-compose.mssql.yml (แบบที่ถูกต้อง)
+
+# property ระดับบนสุด (Top-level)
+services:
+
+  # property 'db' อยู่ "ข้างใน" services: (สังเกตการย่อหน้า)
+  db:
+    container_name: mssql_db
+    image: mcr.microsoft.com/mssql/server:2022-latest # หรือ 2019 ถ้า CPU คุณรองรับ
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${DB_SA_PASSWORD} # อย่าลืมสร้างไฟล์ .env
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    # ถ้าต้องการให้มี healthcheck ด้วย
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${DB_SA_PASSWORD}", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+# property ระดับบนสุด (Top-level)
+volumes:
+  mssql_data:
+    driver: local
