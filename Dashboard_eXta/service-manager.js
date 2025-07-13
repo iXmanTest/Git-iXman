@@ -10,27 +10,36 @@ try {
     process.exit(1);
 }
 
-// [แก้ไข] ใช้ Backticks (`) เพื่อให้สามารถใช้ ${...} ได้
-const serviceName = `${packageJson.name}-service`; 
+const serviceName = `${packageJson.name}-service`;
 const serviceDescription = packageJson.description || `Runs the ${packageJson.name} Next.js application.`;
 
-// 2. [สำคัญ] ระบุ Path ไปยัง "ไฟล์ตัวกลาง" (Runner Script) ที่เราสร้างขึ้น
+// 2. ระบุ Path ไปยัง "ไฟล์ตัวกลาง"
 const scriptPath = path.join(__dirname, 'start-production-server.js');
+
+// 3. ✨ [ใหม่] ดึงค่า Port จาก "config" ใน package.json โดยตรง
+// นี่เป็นวิธีที่ง่ายและแม่นยำกว่าเดิม
+const servicePort = packageJson.config.port || '3000'; // ใช้ 3000 เป็นค่าสำรองถ้าไม่เจอ
+
 
 console.log(`[INFO] กำลังตั้งค่า Service: '${serviceName}'`);
 console.log(`[INFO] Script ที่จะรัน: ${scriptPath}`);
+console.log(`[INFO] 💡 Service จะทำงานบน Port: ${servicePort} (จาก package.json > config)`); // <-- แสดง Port ให้เห็น
 
-// 3. สร้าง Object ของ Service
+// 4. สร้าง Object ของ Service พร้อมส่งค่า Port ไปด้วย
 const svc = new Service({
     name: serviceName,
-    description: serviceDescription,
-    script: scriptPath
+    description: 'Port:'+ servicePort+ ' ' +serviceDescription,
+    script: scriptPath,
+    env: {
+        name: 'SERVICE_PORT',
+        value: servicePort
+    }
 });
 
-// 4. สร้าง Event Listener (เหมือนเดิม)
+// 5. สร้าง Event Listener และส่วนที่เหลือ (เหมือนเดิม)
 svc.on('install', function () {
     console.log(`✅ '${serviceName}' ติดตั้งสำเร็จ`);
-    console.log('กำลังเริ่มต้น Service...');
+    console.log(`กำลังเริ่มต้น Service บน Port ${servicePort}...`);
     svc.start();
 });
 
@@ -43,7 +52,7 @@ svc.on('uninstall', function () {
 });
 
 svc.on('start', function () {
-    console.log(`✅ '${serviceName}' เริ่มทำงานสำเร็จ`);
+    console.log(`✅ '${serviceName}' เริ่มทำงานสำเร็จที่ Port: ${servicePort}`);
 });
 
 svc.on('stop', function () {
@@ -54,33 +63,19 @@ svc.on('error', function (err) {
     console.error(`❌ เกิดข้อผิดพลาดกับ Service:`, err);
 });
 
-
-// 5. รับคำสั่งจาก Command Line (เหมือนเดิม)
+// 6. รับคำสั่งจาก Command Line (เหมือนเดิม)
 const command = process.argv[2];
-
 if (!command) {
     console.log('กรุณาเลือกคำสั่ง: install, uninstall, start, stop, restart');
     return;
 }
-
 console.log(`[ACTION] กำลังดำเนินการ: ${command} สำหรับ Service '${serviceName}'`);
-
 switch (command.toLowerCase()) {
-    case 'install':
-        svc.install();
-        break;
-    case 'uninstall':
-        svc.uninstall();
-        break;
-    case 'start':
-        svc.start();
-        break;
-    case 'stop':
-        svc.stop();
-        break;
-    case 'restart':
-        svc.restart();
-        break;
-    default:
-        console.log('คำสั่งไม่ถูกต้อง. คำสั่งที่ใช้ได้: install, uninstall, start, stop, restart');
+    case 'install': svc.install(); break;
+    case 'uninstall': svc.uninstall(); break;
+    case 'start': svc.start(); break;
+    case 'stop': svc.stop(); break;
+    case 'restart': svc.restart(); break;
+    default: console.log('คำสั่งไม่ถูกต้อง. คำสั่งที่ใช้ได้: install, uninstall, start, stop, restart');
 }
+

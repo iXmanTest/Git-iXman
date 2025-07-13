@@ -1,11 +1,14 @@
 {
-  "name": "nextjs-mui-dashboard",
+  "name": "DashBoard-eXta",
   "version": "0.1.0",
   "private": true,
+  "config": {
+    "port": "3003"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start -p 1234",
+    "start": "next start -p %npm_package_config_port%",
     "lint": "next lint",
     "service:install": "node service-manager.js install",
     "service:uninstall": "node service-manager.js uninstall",
